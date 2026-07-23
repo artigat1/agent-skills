@@ -1,0 +1,11 @@
+{
+  "name": "artigat1-skills",
+  "description": "Steve's personal agent skills and commands for AI coding agents.",
+  "author": {
+    "name": "artigat1"
+  },
+  "homepage": "https://github.com/artigat1/agent-skills",
+  "repository": "https://github.com/artigat1/agent-skills",
+  "skills": "./agents/skills",
+  "commands": ["./agents/commands"]
+}

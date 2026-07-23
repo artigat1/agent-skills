@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "artigat1-agent-skills",
+  "description": "Steve's personal agent skills, exposed as an installable Claude Code plugin.",
+  "owner": {
+    "name": "artigat1",
+    "url": "https://github.com/artigat1"
+  },
+  "plugins": [
+    {
+      "name": "artigat1-skills",
+      "source": {
+        "source": "github",
+        "repo": "artigat1/agent-skills"
+      },
+      "description": "Personal agent skills and commands: code review, product/feature planning, knowledge graphs, and workflow helpers.",
+      "homepage": "https://github.com/artigat1/agent-skills",
+      "keywords": ["skills", "agents", "code-review", "planning", "workflow"]
+    }
+  ]
+}
