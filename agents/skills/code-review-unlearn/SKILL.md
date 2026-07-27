@@ -51,6 +51,16 @@ Read surrounding source files as needed to understand context. Organize findings
 
 Check comments with the same discipline as code. Comments should be concise and necessary; flag comments that restate obvious code or explain names that should instead be made readable through well-named variables/functions.
 
+### Recurring checks
+
+Classes of defect that pass a normal read and have been caught late more than once. Apply them whenever the code fits the shape:
+
+- **Bounds set equal to someone else's bound.** When a value (min/max zoom, clamp, page size, retry ceiling, expiry) is set to the same number as a limit enforced elsewhere — especially inside a library — read the enforcing comparison instead of assuming it is inclusive. `>` vs `>=` at equal values leaves a one-value dead band that exactly one user action reaches, where the feature silently stops working while surrounding UI still claims it. Docs often say "min" and mean "strictly greater than".
+- **Stated query parameters.** When the UI draws, labels, or narrates a parameter the response does not carry (search radius, time window, sample size, score cut-off, cohort), trace it to the producer's actual constant rather than trusting a client-side number or a comment asserting "the convention is X". Producers routinely use tiered or configurable values, so a single hard-coded one gives the visual a false meaning: legitimate results land outside the drawn boundary while other queries stop well inside it. Mirror the producer's values with a test pinning them, or relabel the element as a reference rather than the boundary.
+- **Claims the data doesn't back.** Confirm the consumer reads a response's trust qualifiers (`resolved`, `partial`, `approximate`, `stale_at`, `truncated`), and that empty/error branches carry the caveats the ready branch renders — "none found" becomes the false claim "none exist" when the source reports incomplete coverage.
+
+When a review misses a defect that a later reviewer, another model, or production catches, add its *generalisable* pattern here with a one-line war story. If it doesn't generalise, don't.
+
 ### Severity levels
 
 1. **🔴 Critical** — Bugs, security vulnerabilities, data loss risks, or crashes. Must be fixed.
