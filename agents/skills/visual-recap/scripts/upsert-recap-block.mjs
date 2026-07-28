@@ -5,8 +5,11 @@
 // The block file must start with the start marker and end with the end
 // marker. Requires the `gh` CLI to be authenticated.
 //
-// Vendored unchanged from kentcdodds/kcd-skills (MIT, (c) 2026 Kent C. Dodds):
+// Vendored from kentcdodds/kcd-skills (MIT, (c) 2026 Kent C. Dodds):
 // https://github.com/kentcdodds/kcd-skills/tree/main/skills/visual-recap
+// One fix on top of upstream: the re-run path leaked a trailing newline per
+// invocation (see the comment on nextBody below). Verified against a live PR —
+// upstream grew the description by one blank line on every upsert.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
@@ -38,9 +41,17 @@ const endIndex = body.indexOf(endMarker)
 const hasExistingBlock =
 	startIndex !== -1 && endIndex !== -1 && endIndex > startIndex
 
-const nextBody = hasExistingBlock
-	? body.slice(0, startIndex) + block + body.slice(endIndex + endMarker.length)
-	: `${body.trimEnd()}\n\n${block}\n`
+// `gh --jq .body` appends a trailing newline of its own, and the replace path
+// preserves everything after the end marker verbatim — so without the final
+// trimEnd() that newline compounds by one on every re-run, slowly padding the
+// description with blank lines. Normalising to exactly one trailing newline
+// makes repeated upserts idempotent. Only trailing whitespace at the very end
+// of the description is affected; text outside the markers is untouched.
+const nextBody =
+	(hasExistingBlock
+		? body.slice(0, startIndex) + block + body.slice(endIndex + endMarker.length)
+		: `${body.trimEnd()}\n\n${block}`
+	).trimEnd() + '\n'
 
 execFileSync('gh', ['pr', 'edit', prNumber, '--body-file', '-'], {
 	input: nextBody,
