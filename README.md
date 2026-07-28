@@ -70,6 +70,7 @@ skills only.
 | supacode-cli | Control Supacode from the terminal |
 | triage | Group a diff into feature areas with risk tiers |
 | unlearn-code-review | Unlearn code-review method |
+| visual-recap | GitHub-rendered system recap block in a PR description |
 | warm | WARM dependency check |
 | zombies | ZOMBIES test heuristic |
 
@@ -104,3 +105,11 @@ collection by Alex Garrett-Smith: `checklist`, `code-review`,
 `plan-the-product`, `review-order`, `reviewing-ai-written-code`,
 `spec-generator`, `triage`, `warm`, `zombies`. The `*-unlearn` skills are
 personal adaptations of the same methods.
+
+`visual-recap` is adapted from
+[kentcdodds/kcd-skills](https://github.com/kentcdodds/kcd-skills/tree/main/skills/visual-recap)
+(MIT, © 2026 Kent C. Dodds). Upstream requires a
+`docs/contributing/architecture/primitives.yaml` architecture map; this version
+makes that map optional and falls back to deriving primitives from the repo's
+own structure, recording which source it used. See the skill's Provenance
+section for the full list of changes.
