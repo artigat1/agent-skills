@@ -2,7 +2,7 @@
 name: warm
 description: 🌡️ Evaluate every dependency a branch pulls in — client or server, any language — against the WARM check (Worth it, Alive, Right-sized, Maintained securely). Diffs the branch against a base, finds newly added or upgraded direct dependencies across all manifests, and scores each one. Use when the user asks to "WARM check" a branch, vet new dependencies, or review what a PR adds to the dependency tree.
 argument-hint: "[base branch]"
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Bash(git diff:*), Bash(git log:*), Bash(git merge-base:*), Bash(git rev-parse:*), Bash(git status:*), Bash(git show:*), Bash(npm audit:*), Bash(npm view:*), Bash(composer audit:*), Bash(pip-audit:*), Bash(cat:*), Bash(find:*), Bash(ls:*), Bash(grep:*), Read, Grep, Glob, WebSearch, WebFetch"
 ---
 
