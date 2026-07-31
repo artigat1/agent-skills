@@ -65,6 +65,7 @@ skills only.
 | plan-a-feature | Turn one feature into a build-ready spec |
 | plan-the-product | Idea → structured build-ready product spec |
 | review-order / review-order-unlearn | Structured review-order heuristics |
+| ship-pr | Babysit a PR to green, optionally merge, then Slack a summary |
 | reviewing-ai-written-code | Heuristics for reviewing AI-generated code |
 | spec-generator | Vague idea → detailed product specification |
 | stacked-prs | Stacked-PR repo conventions and merge semantics |
@@ -114,3 +115,9 @@ personal adaptations of the same methods.
 makes that map optional and falls back to deriving primitives from the repo's
 own structure, recording which source it used. See the skill's Provenance
 section for the full list of changes.
+
+`ship-pr` is adapted from the same source
+([kcd-skills/ship-pr](https://github.com/kentcdodds/kcd-skills/tree/main/skills/ship-pr),
+MIT, © 2026 Kent C. Dodds): the Discord notification becomes a Slack DM, and
+the `kody:@kentcdodds/github/*` tooling is replaced with `gh`. See the skill's
+Provenance section.
