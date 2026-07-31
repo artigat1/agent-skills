@@ -52,6 +52,7 @@ skills only.
 
 | Skill | Purpose |
 |---|---|
+| address-review | Investigate, fix/refute, reply to and resolve a PR's review comments |
 | checklist | Working-through-a-checklist discipline |
 | code-review | Code review workflow |
 | code-review-unlearn / code-review-triage-unlearn | Unlearn-style code review + triage |
