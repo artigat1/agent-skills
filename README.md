@@ -72,6 +72,7 @@ skills only.
 | supacode-cli | Control Supacode from the terminal |
 | triage | Group a diff into feature areas with risk tiers |
 | unlearn-code-review | Unlearn code-review method |
+| vibe-code | Orchestrate a change end-to-end: Linear ticket → Codex sub-agent implementation → standard PR ritual → /ship-pr |
 | visual-recap | GitHub-rendered system recap block in a PR description |
 | warm | WARM dependency check |
 | zombies | ZOMBIES test heuristic |
