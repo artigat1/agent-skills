@@ -17,7 +17,7 @@ low risk. Then send a Slack summary.
 /ship-pr                    # PR for the current branch
 /ship-pr 1234               # PR #1234
 /ship-pr <github pr url>    # any repo the URL points at
-/ship-pr --merge            # squash-merge once green, then watch the deploy
+/ship-pr --merge            # merge once green (or enqueue), then watch the deploy
 /ship-pr --no-merge         # stop at green; never merge
 ```
 
@@ -71,9 +71,45 @@ When in doubt, don't — leave it green and say it's ready.
 gh pr merge <num> --squash --delete-branch
 ```
 
-Then watch the post-merge CI/deploy run on the base branch
-(`gh run watch <id>`) and note whether the deploy succeeded — the Slack message
-should say so either way.
+**Merge queues reject both of those flags.** If the base branch has a merge
+queue enabled, `--delete-branch` fails with *"Cannot use `-d` or
+`--delete-branch` when merge queue enabled"*, and `--squash` fails with *"The
+merge strategy for main is set by the merge queue"* — the queue owns the
+strategy, so naming one is an error rather than a preference. Fall back to the
+bare form, which enqueues the PR:
+
+```bash
+gh pr merge <num>            # merge queue: strategy and branch cleanup are the queue's
+```
+
+The queue merges asynchronously, so `gh pr merge` returning is not the merge.
+Poll `gh pr view <num> --json state` until it leaves `OPEN`, and expect the
+queue to revalidate against a base that may have moved — a bounce lands back
+in the loop above, not in the merge step. The queue deletes the head branch
+itself; `git ls-remote --heads origin <branch>` returning nothing confirms it.
+
+Then watch the post-merge CI/deploy run and note whether the deploy succeeded —
+the Slack message should say so either way.
+
+**Watch the deploy that contains the merge commit, not the newest green one.**
+On a busy base branch, deploy workflows cancel superseded runs, so the run
+triggered by *your* merge is routinely `cancelled` while later runs carry your
+code. Two failure modes follow, and they pull in opposite directions:
+
+- Reporting the cancelled run as a failed deploy. It usually is not one —
+  check whether neighbouring runs in the same window were cancelled too.
+- Reporting the first `success` in the list as your deploy. It may predate the
+  merge entirely. "A green deploy exists" is not "your change deployed."
+
+Resolve both by asking whether a *successful* run's head SHA actually contains
+the merge commit:
+
+```bash
+git merge-base --is-ancestor <merge-sha> <deploy-run-head-sha> && echo "carried"
+```
+
+Only that answers "did it ship". If no successful run carries it yet, say
+"merged, deploy pending" and give the reason — do not imply it shipped.
 
 Useful without leaving the shell: `gh pr checks <num> --json` for check-run
 status, and `gh api` for one-off authenticated GitHub calls.
@@ -90,7 +126,7 @@ this is a summary of work already done, not a message that needs review first.
 Keep it short and scannable — this lands on a phone:
 
 ```
-*<pr title>* — merged ✅ / ready to merge 🟢 / needs you ❌
+*<pr title>* — merged ✅ / merged, deploy pending ⏳ / ready to merge 🟢 / needs you ❌
 
 <one line: what the change does>
 <one line: what happened — e.g. "3 CI rounds, fixed a flaky snapshot test + 2 CodeRabbit findings">
@@ -101,6 +137,10 @@ Deploy: <deployment url>          # omit if nothing deployed
 ```
 
 Include only links that exist; a dead "Deploy:" line is worse than no line.
+Use ⏳ when the PR merged but no successful deploy carries the merge commit
+yet, and say why in one line (usually: the run on your commit was cancelled by
+a later merge). Send it rather than holding the summary until a busy base
+branch happens to settle — then follow up when a carrying deploy goes green.
 If the Slack MCP tools are unavailable, print the message in the transcript and
 say it couldn't be sent — do not silently skip it.
 
@@ -116,7 +156,8 @@ Adapted from
 - **`kody:` tooling → `gh`.** Upstream drives GitHub through Kent's personal
   `kody:@kentcdodds/github/*` package (`pr/set-review-status`, `pr/merge`,
   `pr/get-checks`, `request`, `graphql`), which nobody else has. Those are
-  replaced with `gh pr ready`, `gh pr merge --squash`, `gh pr checks` and
+  replaced with `gh pr ready`, `gh pr merge` (`--squash` where no merge
+  queue owns the strategy), `gh pr checks` and
   `gh api`.
 - **Explicit PR resolution (Step 0).** Upstream assumes the PR is already
   identified. This version resolves it once from an argument or the current
