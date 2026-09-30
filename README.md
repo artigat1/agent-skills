@@ -56,6 +56,7 @@ skills only.
 | checklist | Working-through-a-checklist discipline |
 | code-review | Code review workflow |
 | code-review-unlearn / code-review-triage-unlearn | Unlearn-style code review + triage |
+| cleanup | Verify issues and PRs are complete, tear down task-owned local services, and remove the worktree |
 | dual-review | Dual-model (Claude + Codex) PR review panel |
 | feature-generator | Generate/sync features.md from spec.md |
 | first-five | First-five review heuristic |
