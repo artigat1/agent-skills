@@ -13,7 +13,7 @@ Docs: <https://github.github.com/gh-stack/>
 
 ## Repo conventions (ow-copilot)
 
-- Trunk is **`staging`** (the repo default, so `gh stack init` needs no `--base`). Never target `main`.
+- Trunk is **`staging`**. Never target `main`. **Always pass `--base staging`** to `gh stack init` and `gh stack link`. Despite `staging` being the repo default, `gh stack link 16411 16412` (gh-stack v0.0.8) retargeted the bottom PR to `main`. Once a PR is in a stack its base can't be edited, so recovering needs `gh stack unstack <n>`, `gh pr edit <bottom> --base staging`, then a re-link.
 - CI: native stacked PRs trigger workflows as if each PR targets the stack base, so the `run-ci` label should be unnecessary. **Verify checks actually start on upper PRs after `submit`**; if they don't, fall back to adding the `run-ci` label to each stacked PR.
 - `submit --auto` creates draft PRs with auto-generated titles and there is no custom title/body flag — after submitting, set a proper title and description (`.github/pull_request_template.md`, manual-testing checklist) with `gh pr edit <n> --title ... --body-file ...` on **each** PR, post a `/triage` comment per PR, then `gh pr ready <n>` (or `submit --auto --open`).
 - Each PR should be independently reviewable in ~15 minutes — that's the point of stacking.
