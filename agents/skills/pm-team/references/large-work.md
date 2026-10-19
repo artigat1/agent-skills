@@ -2,9 +2,9 @@
 
 Load this when the work is a port of functionality from another product or repo, or a build that spans several features. It adds discovery stages before the roster and a proof stage after review. Small work skips this file.
 
-The idea: never write a spec. Each stage ends with an artifact the user can look at and react to, and that reaction shapes the next stage. The approved artifacts become the spec. The user reviewing an artifact is the approval checkpoint for that stage, the same way the roster approval is in Step 3.
+The idea: never write a spec. Each stage ends with an artifact, and the artifacts become the spec. The user can look at any of them and react whenever they want; that reaction is steering, not a gate.
 
-Run the stages in order. Stop at the end of each one, show the artifact, and wait for the user before starting the next.
+Run the stages in order without stopping. At the end of each one, publish the artifact, post its link in one line, and start the next stage. Make the calls a stage needs yourself and record them in Decisions. When the user's feedback arrives, apply it to the remaining work and to rework of anything already built.
 
 ## Stage 1: Understand
 
@@ -17,28 +17,28 @@ Use a read-only investigator for each codebase if they are large. Keep the main 
 Build a visual artifact of the source's feature surface that the user can click through (on Claude Code, an Artifact page; elsewhere, an HTML file).
 
 - **Only what is live.** Drop anything behind a feature flag that is off in production. Porting dead features is the most expensive mistake available.
-- **Colour by real usage.** Pull usage from the analytics tool the user names (Heap, PostHog, Amplitude, Datadog RUM). Usage ranks the work: build order follows it, so stopping halfway leaves the most-used features done.
+- **Colour by real usage.** Pull usage from whichever analytics tool is connected (Heap, PostHog, Amplitude, Datadog RUM). Usage ranks the work: build order follows it, so stopping halfway leaves the most-used features done.
 - **Show, do not describe.** Where the source can be run, record short clips of each capability and attach them. A 20-second clip settles what a paragraph cannot, and becomes the yardstick for the built version in Stage 6.
 
-Put the data pulls and recordings on sub-agents so the main thread stays small. Recording or signing into a real product is outward-facing: get an explicit, scoped yes first.
+Put the data pulls and recordings on sub-agents so the main thread stays small. Recording or signing into a real product is outward-facing and needs an explicit, scoped yes. Include it in the single up-front request for approvals.
 
 ## Stage 3: Decide and prototype
 
 For each capability worth keeping, decide where it lives in the target.
 
-- **Where the target already has it, say so and skip it.** The user can delegate this call ("for some, you can make the decision that these already exist"). Record each skip in Decisions.
-- **Read the decisions already made.** Ask for the meeting notes, Slack threads, or tickets where the team discussed this, and read them, so the user does not have to retype them.
+- **Where the target already has it, say so and skip it.** Make this call yourself and record each skip in Decisions.
+- **Read the decisions already made.** Find the meeting notes, Slack threads, and tickets where the team discussed this with whatever tools are connected, and read them. Ask the user for them only if you find nothing.
 - **For the rest, build a click-through prototype in the real target frontend, not a mock.** Placement problems show up now, not in review. Record each prototype and add it to the Stage 2 artifact with a feedback box per capability.
 
-The user's feedback on the prototypes is the scope. Anything they have not reviewed is out of scope.
+The prototypes are the scope. Feedback on them that arrives later adjusts it.
 
 ## Stage 4: Check the environment
 
 Do this before any builder starts. Skipping it was the costliest mistake in the run this file is drawn from.
 
-1. List every credential, external service, API key, and seed dataset the work needs to run end to end locally. Check each one is present and live, and tell the user what is missing.
+1. List every credential, external service, API key, and seed dataset the work needs to run end to end locally. Check each one is present and live. Fix what you can. A missing credential only the user can supply is one of the few things worth stopping for: ask for all of them in one message.
 2. Smoke-test the stack itself: the core user path completes (for an agent product, one chat turn completes and one document indexes), and background workers are running.
-3. Agree the gating scope: gate only what is new. Gating something the target already ships switches it off in production until roles exist.
+3. Set the gating scope and record it in Decisions: gate only what is new. Gating something the target already ships switches it off in production until roles exist.
 
 Builders that start on a broken stack test against sample data and report green.
 
@@ -46,15 +46,15 @@ Builders that start on a broken stack test against sample data and report green.
 
 This is the normal Step 1 to Step 5 flow, with three differences.
 
-- **Units come from the approved prototypes, in usage order.** Point every brief at the artifact as the source of truth instead of re-describing the feature.
-- **Every brief carries the same standing criteria**, agreed with the user once before the roster. Typical ones for an agent product:
+- **Units come from the prototypes, in usage order.** Point every brief at the artifact as the source of truth instead of re-describing the feature.
+- **Every brief carries the same standing criteria.** Set them from the repo's own rules, state them in the roster message, and record them in Decisions. Typical ones for an agent product:
   - The agent can use the feature as well as a user can.
   - The agent can read the feature's underlying data.
   - The feature is toggled per user by role.
   - No new agent tools: options on existing commands, procedure in skills.
 
   Each one forces a design decision up front that would otherwise surface in review. The criteria say what good looks like. The repo's own AGENTS.md or CLAUDE.md says how to build, so briefs do not prescribe architecture.
-- **Validate business rules against the source's backend.** Prototypes show the flow, not the rules (limits, pricing, edge cases). Builders read the source implementation. When they find a source bug, they record it in the scratchpad and the user decides whether to port the behaviour.
+- **Validate business rules against the source's backend.** Prototypes show the flow, not the rules (limits, pricing, edge cases). Builders read the source implementation. When they find a source bug, they record it in the scratchpad. You decide whether to port the behaviour (usually not), record it in Decisions, and list it in the Done report.
 
 Also:
 
