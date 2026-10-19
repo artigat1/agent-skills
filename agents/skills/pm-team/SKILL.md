@@ -1,6 +1,6 @@
 ---
 name: pm-team
-description: Run a piece of work as a PM leading a team of agents. The PM breaks the work into units, picks the cheapest model and effort that will reliably do each one, posts the roster and starts without waiting for approval, then delegates, reviews every diff, raises and ships the PRs, and keeps Linear current. The team coordinates through one shared scratchpad file. For a port from another product or a multi-feature build, it first runs artifact-led discovery (feature map, usage, prototypes). Work with visible changes ends in a playable walkthrough with a recording of each change. Use when the user invokes /pm-team or asks to "run this as a team", "put a team on this", or "be the PM for this".
+description: Run a piece of work as a PM leading a team of agents. The PM breaks the work into units, picks the cheapest model and effort that will reliably do each one, posts the roster and starts without waiting for approval, then delegates, reviews every diff, raises and ships the PRs, and keeps Linear current. The team coordinates through one shared scratchpad file. For a port from another product or a multi-feature build, it first runs artifact-led discovery (feature map, usage, prototypes) and ends in a playable walkthrough with a recording of each change. A bug fix or small change runs without a team: reproduce with evidence, fix, prove it on the real stack, and attach a before-and-after recording to the PR. Use when the user invokes /pm-team or asks to "run this as a team", "put a team on this", or "be the PM for this".
 disable-model-invocation: false
 argument-hint: "<the work: a ticket, a feature, a bug, or a list of changes>"
 model: opus
@@ -27,6 +27,19 @@ Say which model you are running on in the roster message. If the user prefers a 
 ## Large work
 
 If the work ports functionality from another product or repo, or spans several features, read `references/large-work.md` now and follow it. It runs discovery stages (understand, map with usage, prototype, check the environment) before Step 1, adds standing acceptance criteria to every brief, and adds a proof stage after Step 5. Each stage publishes an artifact the user can steer from, and the next stage starts without waiting. If it is unclear whether the work is large, decide, and say which mode you chose in the roster message.
+
+## Small work
+
+A bug fix or a change to one piece of functionality does not need a team. Skip the roster table: do it yourself, or brief one worker if it needs a different tier from yours. Say which in one line, then keep the steps that pay at any size:
+
+1. **Reproduce with evidence.** For a bug: a failing test, plus a short recording of it happening if it is visible, plus production evidence (logs, traces, how many users hit it and since when) where you have access. Break the fix and watch the test go red; a test that passes either way proves nothing. If the host has a TDD skill (pstack `/tdd`), use it for this step. For a change: read what is there now and write a one-line "done when".
+2. **Check the environment.** Before believing a local result, confirm the stack is the one you think it is: the right runtime versions, a fresh build, the right worktree's code, the services the change needs running.
+3. **Fix**, with the test from step 1.
+4. **Prove it on the real stack.** Exercise the fix through the real UI or API, not only the unit test.
+5. **Show it.** For a visible change, attach a before-and-after recording to the PR. Skip the walkthrough page.
+6. Ship as in Step 6.
+
+The scratchpad is optional for small work. Create one only if a worker joins.
 
 ## Step 1: Scope the work
 
@@ -158,11 +171,11 @@ Worker questions come to you through the scratchpad. Answer them yourself if you
 
 ## Done
 
-If the work changed anything a user can see, build the completion walkthrough before reporting: read `references/walkthrough.md` and follow it. It is one page with a before-and-after recording of each change, a status label for each, and feedback and question boxes. Put the recording in the roster as its own unit.
+If the work made several changes a user can see, build the completion walkthrough before reporting: read `references/walkthrough.md` and follow it. It is one page with a before-and-after recording of each change, a status label for each, and feedback and question boxes. Put the recording in the roster as its own unit. A single visible change gets its before-and-after recording on the PR instead.
 
 Report to the user:
 
-- The walkthrough link, or one line saying why there is none (backend-only, nothing to show).
+- The walkthrough link, the PR recording, or one line saying why there is neither (backend-only, nothing to show).
 - The ticket, each PR link, and whether it merged (or exactly what blocks it).
 - The roster as it ran: each unit's model and effort, any escalation and why, and anything you did yourself.
 - Review findings you acted on and any you declined, with the reason.

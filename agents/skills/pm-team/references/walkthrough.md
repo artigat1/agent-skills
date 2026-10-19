@@ -1,6 +1,6 @@
 # The completion walkthrough
 
-Every run that changes something a user can see ends with a walkthrough: one page the user (and their team) can play through at their own pace, with a recording of each change and somewhere to leave feedback. Backend-only work with nothing to show skips it and says so in the Done report.
+Every run that makes several changes a user can see ends with a walkthrough: one page the user (and their team) can play through at their own pace, with a recording of each change and somewhere to leave feedback. A single visible change gets a before-and-after recording on the PR instead. Backend-only work with nothing to show skips both and says so in the Done report.
 
 ## Shape
 
