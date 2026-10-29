@@ -65,6 +65,7 @@ skills only.
 | llm-wiki | Persistent LLM-built knowledge wiki |
 | plan-a-feature | Turn one feature into a build-ready spec |
 | plan-the-product | Idea → structured build-ready product spec |
+| pr-walkthrough | Animated PR walkthrough for large changes, with an optional interactive viewer |
 | review-order / review-order-unlearn | Structured review-order heuristics |
 | ship-pr | Babysit a PR to green, optionally merge, then Slack a summary |
 | reviewing-ai-written-code | Heuristics for reviewing AI-generated code |

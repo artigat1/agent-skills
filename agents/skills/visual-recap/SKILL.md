@@ -164,7 +164,10 @@ Format rules:
    the end of the description on first run. It never touches text outside the
    markers, so a hand-written PR description survives intact.
 
-6. Re-run steps 2-5 after pushing significant new commits to the PR.
+6. For a large or complex change that needs a guided explanation, also apply
+   [pr-walkthrough](../pr-walkthrough/SKILL.md). Its animated tour supplements
+   this recap and triage. Routine small changes skip the walkthrough.
+7. Re-run steps 2-6 after pushing significant new commits to the PR.
 
 ### Plan mode
 

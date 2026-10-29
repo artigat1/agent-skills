@@ -1,0 +1,22 @@
+{
+  "name": "pr-lens-walkthrough-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Scripts behind the pr-lens-walkthrough skill: renderer bundle, self-playing SVG compiler, viewer builder.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "vite build --logLevel error",
+    "smoke": "node walkthrough-svg.mjs ../examples/checkout.graph.json /tmp/pr-lens-smoke/walkthrough.svg && node build-viewer.mjs ../examples/checkout.graph.json /tmp/pr-lens-smoke/viewer.html"
+  },
+  "dependencies": {
+    "@coldtea/pr-lens-cli": "^0.4.0",
+    "@coldtea/pr-lens-renderer": "^0.2.2",
+    "@coldtea/pr-lens-schema": "^0.2.1"
+  },
+  "devDependencies": {
+    "vite": "^6.4.0"
+  }
+}

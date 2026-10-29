@@ -1,0 +1,753 @@
+{
+  "schemaVersion": "0.1.1",
+  "kind": "graph",
+  "title": "Card capture moves off the checkout write path",
+  "summary": "Checkout used to call Stripe before it wrote the order, so a shopper waited on the card network and a slow capture lost the order with it. The order is now written first and the capture is enqueued; a worker drains the queue and Stripe calls back over a webhook to mark the order paid. A cache drops replayed webhooks so nobody is charged twice.",
+  "lenses": [
+    "architecture",
+    "data-flow"
+  ],
+  "provenance": {
+    "repo": {
+      "owner": "acme",
+      "name": "storefront",
+      "host": "github.com"
+    },
+    "base": {
+      "sha": "0f3c1aa"
+    },
+    "head": {
+      "sha": "b7e42d9"
+    },
+    "pullRequest": {
+      "number": 812
+    }
+  },
+  "lanes": [
+    {
+      "id": "browser",
+      "label": "Browser",
+      "subtitle": "Next.js",
+      "order": 1
+    },
+    {
+      "id": "edge",
+      "label": "Edge API",
+      "subtitle": "routes",
+      "order": 2
+    },
+    {
+      "id": "services",
+      "label": "Services",
+      "order": 3
+    },
+    {
+      "id": "data",
+      "label": "Data",
+      "order": 4
+    },
+    {
+      "id": "external",
+      "label": "External",
+      "order": 5
+    }
+  ],
+  "nodes": [
+    {
+      "id": "checkout-page",
+      "label": "Checkout page",
+      "kind": "ui",
+      "delta": "unchanged",
+      "lane": "browser",
+      "summary": "Where the shopper reviews the basket and pays.",
+      "files": [],
+      "badges": []
+    },
+    {
+      "id": "pay-button",
+      "label": "PayButton",
+      "kind": "ui",
+      "delta": "modified",
+      "lane": "browser",
+      "subtitle": "no longer blocks",
+      "summary": "Stops spinning when the order is written, not when the card clears.",
+      "files": [
+        {
+          "path": "web/components/PayButton.tsx",
+          "startLine": 1,
+          "endLine": 96
+        }
+      ],
+      "badges": []
+    },
+    {
+      "id": "checkout-route",
+      "label": "POST /checkout",
+      "kind": "route",
+      "delta": "modified",
+      "lane": "edge",
+      "summary": "Creates the order and returns. Nothing here talks to Stripe any more.",
+      "files": [
+        {
+          "path": "api/routes/checkout.ts",
+          "startLine": 12,
+          "endLine": 88
+        }
+      ],
+      "badges": []
+    },
+    {
+      "id": "webhook-route",
+      "label": "POST /webhooks/stripe",
+      "kind": "route",
+      "delta": "added",
+      "lane": "edge",
+      "subtitle": "signature checked",
+      "summary": "Stripe's callback. Verifies the signature, drops replays, marks the order paid.",
+      "files": [
+        {
+          "path": "api/routes/webhooks/stripe.ts",
+          "startLine": 1,
+          "endLine": 134
+        }
+      ],
+      "badges": [
+        "idempotent"
+      ]
+    },
+    {
+      "id": "order-service",
+      "label": "OrderService",
+      "kind": "service",
+      "delta": "modified",
+      "lane": "services",
+      "summary": "Writes the order as pending and enqueues the capture instead of doing it inline.",
+      "files": [
+        {
+          "path": "services/orders/OrderService.ts",
+          "startLine": 40,
+          "endLine": 210
+        }
+      ],
+      "badges": []
+    },
+    {
+      "id": "capture-inline",
+      "label": "captureCardInline",
+      "kind": "function",
+      "delta": "removed",
+      "lane": "services",
+      "subtitle": "deleted",
+      "summary": "Called Stripe before the order row existed. A timeout here threw away a paid basket.",
+      "files": [
+        {
+          "path": "services/payments/captureCardInline.ts"
+        }
+      ],
+      "badges": []
+    },
+    {
+      "id": "capture-worker",
+      "label": "captureWorker",
+      "kind": "job",
+      "delta": "added",
+      "lane": "services",
+      "subtitle": "3 attempts, backoff",
+      "summary": "Drains the queue and captures the payment intent. Retries on its own.",
+      "files": [
+        {
+          "path": "services/payments/captureWorker.ts",
+          "startLine": 1,
+          "endLine": 178
+        }
+      ],
+      "badges": [
+        "retry"
+      ]
+    },
+    {
+      "id": "payment-client",
+      "label": "PaymentClient",
+      "kind": "module",
+      "delta": "modified",
+      "lane": "services",
+      "summary": "The one wrapper around Stripe. Gained a capture call and lost the inline one.",
+      "files": [
+        {
+          "path": "services/payments/PaymentClient.ts",
+          "startLine": 22,
+          "endLine": 141
+        }
+      ],
+      "badges": []
+    },
+    {
+      "id": "orders-db",
+      "label": "orders",
+      "kind": "datastore",
+      "delta": "unchanged",
+      "lane": "data",
+      "subtitle": "Postgres",
+      "summary": "The order row, written pending and later marked paid.",
+      "files": [],
+      "badges": []
+    },
+    {
+      "id": "capture-queue",
+      "label": "capture-jobs",
+      "kind": "queue",
+      "delta": "added",
+      "lane": "data",
+      "subtitle": "SQS",
+      "summary": "Holds one capture job per order. Survives a worker dying mid-capture.",
+      "files": [],
+      "badges": []
+    },
+    {
+      "id": "idempotency-cache",
+      "label": "webhook-seen",
+      "kind": "cache",
+      "delta": "added",
+      "lane": "data",
+      "subtitle": "Redis, 24h",
+      "summary": "Event ids Stripe has already sent. A repeat is dropped rather than charged.",
+      "files": [],
+      "badges": []
+    },
+    {
+      "id": "stripe",
+      "label": "Stripe",
+      "kind": "external",
+      "delta": "unchanged",
+      "lane": "external",
+      "summary": "Captures the payment and calls back when it settles.",
+      "files": [],
+      "badges": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "page-to-button",
+      "from": "checkout-page",
+      "to": "pay-button",
+      "kind": "render",
+      "delta": "unchanged",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "button-to-route",
+      "from": "pay-button",
+      "to": "checkout-route",
+      "kind": "http",
+      "delta": "modified",
+      "label": "POST /checkout",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "route-to-order",
+      "from": "checkout-route",
+      "to": "order-service",
+      "kind": "call",
+      "delta": "modified",
+      "label": "createOrder",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "order-to-db",
+      "from": "order-service",
+      "to": "orders-db",
+      "kind": "data",
+      "delta": "unchanged",
+      "label": "status: pending",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "order-to-inline",
+      "from": "order-service",
+      "to": "capture-inline",
+      "kind": "call",
+      "delta": "removed",
+      "label": "was: capture first",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "inline-to-stripe",
+      "from": "capture-inline",
+      "to": "stripe",
+      "kind": "http",
+      "delta": "removed",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "order-to-queue",
+      "from": "order-service",
+      "to": "capture-queue",
+      "kind": "queue",
+      "delta": "added",
+      "label": "enqueue capture",
+      "emphasis": "hero",
+      "animated": true,
+      "files": []
+    },
+    {
+      "id": "queue-to-worker",
+      "from": "capture-queue",
+      "to": "capture-worker",
+      "kind": "queue",
+      "delta": "added",
+      "label": "drain",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "worker-to-client",
+      "from": "capture-worker",
+      "to": "payment-client",
+      "kind": "call",
+      "delta": "added",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "client-to-stripe",
+      "from": "payment-client",
+      "to": "stripe",
+      "kind": "http",
+      "delta": "modified",
+      "label": "capture intent",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "stripe-to-webhook",
+      "from": "stripe",
+      "to": "webhook-route",
+      "kind": "event",
+      "delta": "added",
+      "label": "payment_intent.succeeded",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "webhook-to-cache",
+      "from": "webhook-route",
+      "to": "idempotency-cache",
+      "kind": "data",
+      "delta": "added",
+      "label": "seen before?",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    },
+    {
+      "id": "webhook-to-order",
+      "from": "webhook-route",
+      "to": "order-service",
+      "kind": "call",
+      "delta": "added",
+      "label": "mark paid",
+      "emphasis": "normal",
+      "animated": false,
+      "files": []
+    }
+  ],
+  "flows": [
+    {
+      "id": "checkout-flow",
+      "title": "Paying for an order",
+      "delta": "modified",
+      "participants": [
+        {
+          "node": "pay-button"
+        },
+        {
+          "node": "checkout-route"
+        },
+        {
+          "node": "order-service"
+        },
+        {
+          "node": "orders-db"
+        },
+        {
+          "node": "capture-queue"
+        },
+        {
+          "node": "capture-worker"
+        },
+        {
+          "node": "stripe"
+        },
+        {
+          "node": "webhook-route"
+        }
+      ],
+      "messages": [
+        {
+          "id": "pay",
+          "from": "pay-button",
+          "to": "checkout-route",
+          "label": "Pay 48.00",
+          "kind": "sync",
+          "delta": "unchanged",
+          "animated": true,
+          "files": []
+        },
+        {
+          "id": "create",
+          "from": "checkout-route",
+          "to": "order-service",
+          "label": "create the order",
+          "kind": "sync",
+          "delta": "modified",
+          "animated": true,
+          "files": []
+        },
+        {
+          "id": "write",
+          "from": "order-service",
+          "to": "orders-db",
+          "label": "status: pending",
+          "kind": "sync",
+          "delta": "unchanged",
+          "animated": true,
+          "files": []
+        },
+        {
+          "id": "enqueue",
+          "from": "order-service",
+          "to": "capture-queue",
+          "label": "capture job",
+          "kind": "async",
+          "delta": "added",
+          "animated": true,
+          "files": []
+        },
+        {
+          "id": "ack",
+          "from": "checkout-route",
+          "to": "pay-button",
+          "label": "201 in 90ms",
+          "kind": "return",
+          "delta": "modified",
+          "animated": true,
+          "files": []
+        },
+        {
+          "id": "drain",
+          "from": "capture-queue",
+          "to": "capture-worker",
+          "label": "one job",
+          "kind": "async",
+          "delta": "added",
+          "animated": true,
+          "files": []
+        },
+        {
+          "id": "capture",
+          "from": "capture-worker",
+          "to": "stripe",
+          "label": "capture the intent",
+          "kind": "sync",
+          "delta": "added",
+          "animated": true,
+          "repeat": 3,
+          "files": []
+        },
+        {
+          "id": "captured",
+          "from": "stripe",
+          "to": "capture-worker",
+          "label": "succeeded",
+          "kind": "return",
+          "delta": "added",
+          "animated": true,
+          "files": []
+        },
+        {
+          "id": "notify",
+          "from": "stripe",
+          "to": "webhook-route",
+          "label": "payment_intent.succeeded",
+          "kind": "async",
+          "delta": "added",
+          "animated": true,
+          "files": []
+        },
+        {
+          "id": "mark-paid",
+          "from": "webhook-route",
+          "to": "order-service",
+          "label": "status: paid",
+          "kind": "sync",
+          "delta": "added",
+          "animated": true,
+          "files": []
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "filesChanged": 23,
+    "additions": 1204,
+    "deletions": 388,
+    "chips": [
+      {
+        "label": "Checkout reply",
+        "value": "1.8s to 90ms",
+        "tone": "hero"
+      },
+      {
+        "label": "Stripe calls on the write path",
+        "value": "none",
+        "tone": "removed"
+      },
+      {
+        "label": "New parts",
+        "value": "queue, worker, webhook",
+        "tone": "added"
+      },
+      {
+        "label": "Double charges",
+        "value": "deduped",
+        "tone": "neutral"
+      }
+    ]
+  },
+  "views": [
+    {
+      "id": "overview",
+      "title": "Checkout after the split",
+      "lens": "architecture",
+      "summary": "The whole blast radius: what the shopper waits for, and what now happens behind them.",
+      "scope": {
+        "kind": "all"
+      },
+      "defaultOpen": true,
+      "children": [
+        {
+          "id": "the-new-path",
+          "title": "The capture path",
+          "lens": "architecture",
+          "summary": "Queue, worker and the one Stripe wrapper that survived.",
+          "scope": {
+            "kind": "selection",
+            "lanes": [],
+            "nodes": [
+              "order-service",
+              "capture-queue",
+              "capture-worker",
+              "payment-client",
+              "stripe"
+            ],
+            "edges": [
+              "order-to-queue",
+              "queue-to-worker",
+              "worker-to-client",
+              "client-to-stripe"
+            ],
+            "flows": []
+          },
+          "defaultOpen": false,
+          "children": []
+        },
+        {
+          "id": "what-retired",
+          "title": "What was retired",
+          "lens": "architecture",
+          "summary": "The inline capture that stood between the shopper and their order row.",
+          "scope": {
+            "kind": "selection",
+            "lanes": [],
+            "nodes": [
+              "order-service",
+              "capture-inline",
+              "stripe"
+            ],
+            "edges": [
+              "order-to-inline",
+              "inline-to-stripe"
+            ],
+            "flows": []
+          },
+          "defaultOpen": false,
+          "children": []
+        },
+        {
+          "id": "webhook-return",
+          "title": "Stripe's callback",
+          "lens": "architecture",
+          "summary": "How the order learns it was paid, and how a replayed event is dropped.",
+          "scope": {
+            "kind": "selection",
+            "lanes": [],
+            "nodes": [
+              "stripe",
+              "webhook-route",
+              "order-service",
+              "idempotency-cache"
+            ],
+            "edges": [
+              "stripe-to-webhook",
+              "webhook-to-cache",
+              "webhook-to-order"
+            ],
+            "flows": []
+          },
+          "defaultOpen": false,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "pay-flow",
+      "title": "Paying, step by step",
+      "lens": "data-flow",
+      "summary": "Where the shopper is released, and what happens after they have gone.",
+      "scope": {
+        "kind": "selection",
+        "lanes": [],
+        "nodes": [],
+        "edges": [],
+        "flows": [
+          "checkout-flow"
+        ]
+      },
+      "defaultOpen": false,
+      "children": []
+    }
+  ],
+  "walkthrough": {
+    "steps": [
+      {
+        "id": "released-early",
+        "heading": "Checkout no longer waits for Stripe",
+        "body": "The order is written and the reply goes back in 90ms. The card is captured a moment later.",
+        "stage": {
+          "kind": "flow",
+          "flow": "checkout-flow"
+        },
+        "focus": {
+          "kind": "selection",
+          "lanes": [],
+          "nodes": [],
+          "edges": [],
+          "messages": [
+            "enqueue",
+            "ack"
+          ]
+        }
+      },
+      {
+        "id": "worker-captures",
+        "heading": "Capture moved to a worker",
+        "body": "A job comes off the queue and captures the payment. It retries three times on its own if Stripe is slow.",
+        "stage": {
+          "kind": "view",
+          "view": "the-new-path"
+        },
+        "focus": {
+          "kind": "selection",
+          "lanes": [],
+          "nodes": [
+            "capture-queue",
+            "capture-worker"
+          ],
+          "edges": [
+            "order-to-queue"
+          ],
+          "messages": []
+        }
+      },
+      {
+        "id": "inline-gone",
+        "heading": "The inline capture path is gone",
+        "body": "It called Stripe before the order row existed, so one timeout threw away a basket the shopper had paid for.",
+        "stage": {
+          "kind": "view",
+          "view": "what-retired"
+        },
+        "focus": {
+          "kind": "selection",
+          "lanes": [],
+          "nodes": [
+            "capture-inline"
+          ],
+          "edges": [
+            "order-to-inline"
+          ],
+          "messages": []
+        }
+      },
+      {
+        "id": "stripe-calls-back",
+        "heading": "Stripe now calls us back",
+        "body": "A webhook marks the order paid, so the order believes Stripe rather than a hopeful write of its own.",
+        "stage": {
+          "kind": "view",
+          "view": "webhook-return"
+        },
+        "focus": {
+          "kind": "selection",
+          "lanes": [],
+          "nodes": [
+            "stripe",
+            "webhook-route"
+          ],
+          "edges": [
+            "stripe-to-webhook"
+          ],
+          "messages": []
+        }
+      },
+      {
+        "id": "replays-dropped",
+        "heading": "Replayed webhooks are dropped",
+        "body": "Stripe sends the same event more than once. The cache remembers it for a day so nobody is charged twice.",
+        "stage": {
+          "kind": "view",
+          "view": "webhook-return"
+        },
+        "focus": {
+          "kind": "selection",
+          "lanes": [],
+          "nodes": [
+            "idempotency-cache"
+          ],
+          "edges": [
+            "webhook-to-cache"
+          ],
+          "messages": []
+        }
+      },
+      {
+        "id": "blast-radius",
+        "heading": "23 files, 5 lanes, 3 parts added",
+        "body": "The card is still captured. It just stopped standing between the shopper and their receipt.",
+        "stage": {
+          "kind": "view",
+          "view": "overview"
+        },
+        "focus": {
+          "kind": "all"
+        }
+      }
+    ]
+  }
+}
